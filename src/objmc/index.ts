@@ -57,7 +57,9 @@ function leftPadName(width: number, content: string, suffix: string) {
 }
 
 export async function executeObjMC(objs: any[], textures: any[], colorbehavior: string[],
-    duration: number, modelPath: string | undefined, texturePath: string, autoAnimate: boolean, autoRotate: string, noShadow: boolean, pow2: boolean) {
+    duration: number, modelPath: string | undefined, texturePath: string, 
+    autoAnimate: boolean, autoRotate: string, noShadow: boolean, pow2: boolean,
+    scale: number|undefined, offset: number[]|undefined) {
     cleanTemp()
 
     const objFilePaths = objs.map((obj, idx) => {
@@ -104,6 +106,10 @@ export async function executeObjMC(objs: any[], textures: any[], colorbehavior: 
         args.push('--noshadow')
     if(!pow2)
         args.push('--nopow')
+    if(scale)
+        args.push('--scale', scale.toString())
+    if(offset)
+        args.push('--offset', ...offset.map(o => o.toString()))
 
     args.push('--out', modelPath ?? path.join(tempFolder, 'model.json'), texturePath)
 

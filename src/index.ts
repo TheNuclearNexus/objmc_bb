@@ -35,9 +35,9 @@ async function onLoad() {
             exposed: true,
             default: undefined
         }),
-        new Property(Animation, "object", "previous_settings", {
+        new Property(ModelProject, "object", "animation_settings", {
             exposed: true,
-            default: undefined
+            default: {}
         })
     ]
 }

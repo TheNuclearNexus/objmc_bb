@@ -20,9 +20,18 @@ const AUTOROTATES = {
     'pitch': 'Pitch',
     'both': 'Both'
 }
+
+const PRESETS = {
+    'custom': 'Custom',
+    'vindicator': 'Vindicator',
+    'zombie': 'Zombie',
+    'trader': 'Trader'
+}
+
 interface NewProperties {
     model_output_folder: string
-    texture_output_folder: string
+    texture_output_folder: string,
+    animation_settings: {[key: string]: ExportFormData}
 }
 
 const getCurrentProject = (): (ModelProject & NewProperties) | null => Project ? Project as any : null
@@ -36,7 +45,9 @@ export default new Action('export_objmc', {
     condition: (context) => context && AnimationItem.selected,
     click: () => {
         const selected = (Animation as any).selected
-        clickOnAnimation(selected.previous_settings ?? { exportModel: true })
+        const curProject = getCurrentProject()
+        const lastSettings = curProject?.animation_settings ? curProject.animation_settings[selected.name] : undefined
+        clickOnAnimation(lastSettings ?? { exportModel: true })
     }
 })
 
@@ -54,21 +65,27 @@ interface ExportFormData {
     modelOutputFolder: string,
     modelFileName: string,
     textureOutputFolder: string,
-    textureFileName: string
+    textureFileName: string,
+    useScaleAndOffset: boolean,
+    preset: string,
+    scale: number,
+    offsetX: number,
+    offsetY: number,
+    offsetZ: number
 }
 
-function clickOnAnimation(previous_results: any = { exportModel: true }) {
+function clickOnAnimation(previous_results: Partial<ExportFormData> = { exportModel: true, useScaleAndOffset: false }) {
     const selected = (Animation as any).selected
 
     const curProject = getCurrentProject()
 
-    const modelOutputFolder: DialogFormElement = { label: 'Model Output Folder', type: 'folder', value: curProject?.model_output_folder };
+    const modelOutputFolder: DialogFormElement = { label: 'Model Output Folder', type: 'folder', value:  previous_results.modelOutputFolder ?? curProject?.model_output_folder };
     const modelFileName: DialogFormElement = { label: 'Model File Name', type: 'text', value: selected.name.split('.').at(-1) + '.json' };
-    const textureOutputFolder: DialogFormElement = { label: 'Texture Output Folder', type: 'folder', value: curProject?.texture_output_folder }
+    const textureOutputFolder: DialogFormElement = { label: 'Texture Output Folder', type: 'folder', value: previous_results.textureOutputFolder ??  curProject?.texture_output_folder }
     const textureFileName: DialogFormElement = { label: 'Texture File Name', type: 'text', value: selected.name.split('.').at(-1) + '.png' }
 
 
-    const form: {
+    let form: {
         [formElement: string]: DialogFormElement | "_";
     } = {
         length: { label: 'Length', type: 'number', value: previous_results.length ?? selected.length, min: 0, max: 10000 },
@@ -87,12 +104,36 @@ function clickOnAnimation(previous_results: any = { exportModel: true }) {
     }
 
     if (previous_results.exportModel) {
-        form.modelOutputFolder = modelOutputFolder
-        form.modelFileName = modelFileName
+        form = {
+            ...form,
+            modelOutputFolder,
+            modelFileName
+        }
     }
-    form.modelFiller = "_"
-    form.textureOutputFolder = textureOutputFolder
-    form.textureFileName = textureFileName
+    form = {
+        ...form,
+        modelFiller: "_",
+        textureOutputFolder,
+        textureFileName,
+        scaleFiller: "_",
+        useScaleAndOffset: { label: 'User Scale and Offset?', type: 'checkbox', value: previous_results.useScaleAndOffset ?? false, nocolon: true }
+    }
+
+    if (previous_results.useScaleAndOffset) {
+        const areScaleAndOffsetReadonly = !(previous_results.preset === undefined || previous_results.preset === 'custom')
+        
+        form = {
+            ...form,
+            preset: { label: 'Preset', type: 'select', value: previous_results.preset ?? 'custom', options: PRESETS },
+            scale: {label: 'Scale', type: 'number', value: previous_results.scale ?? 1, readonly: areScaleAndOffsetReadonly},
+            offsetX: {label: 'Offset.X', type: 'number', value: previous_results.offsetX ?? 0, readonly: areScaleAndOffsetReadonly},
+            offsetY: {label: 'Offset.Y', type: 'number', value: previous_results.offsetY ?? 0, readonly: areScaleAndOffsetReadonly},
+            offsetZ: {label: 'Offset.Z', type: 'number', value: previous_results.offsetZ ?? 0, readonly: areScaleAndOffsetReadonly}
+
+        }
+
+    }
+
 
     new Dialog({
         id: 'export_objmc',
@@ -103,11 +144,44 @@ function clickOnAnimation(previous_results: any = { exportModel: true }) {
             if (!this.form)
                 return
 
-            if (form_result.exportModel == previous_results.exportModel)
+            switch(form_result.preset ?? undefined) {
+                case 'vindicator':
+                    form_result.scale = 0.9
+                    form_result.offsetX = 0
+                    form_result.offsetY = -1.35
+                    form_result.offsetZ = 0
+                    break;
+                case 'zombie':
+                    form_result.scale = 0.9
+                    form_result.offsetX = 0
+                    form_result.offsetY = -1.32
+                    form_result.offsetZ = 0
+                    break;
+                case 'trader':
+                    form_result.scale = 0.9
+                    form_result.offsetX = 0
+                    form_result.offsetY = -0.55
+                    form_result.offsetZ = 0.375
+                    break;
+                case 'custom':
+                    if(previous_results.preset !== 'custom') {
+                        form_result.scale = 1
+                        form_result.offsetX = 0
+                        form_result.offsetY = 0
+                        form_result.offsetZ = 0
+                    }
+                    break;
+            }
+
+            if (
+                form_result.exportModel == previous_results.exportModel &&
+                form_result.useScaleAndOffset == previous_results.useScaleAndOffset &&
+                form_result.preset == previous_results.preset
+            )
                 return
-
+            
             Dialog.open?.hide()
-
+            console.log(form_result)
             clickOnAnimation(form_result)
         }
     }).show();
@@ -172,27 +246,35 @@ async function onConfirmDialog(this: Dialog, args: any) {
         autoAnimate,
         autoRotate,
         noShadow,
-        pow2
+        pow2,
+        useScaleAndOffset,
+        scale,
+        offsetX,
+        offsetY,
+        offsetZ
     } = args as ExportFormData
 
     const curProject = getCurrentProject()
     const selectedAnimation = (Animation as any).selected
 
 
-    if(textureOutputFolder === '') {
+    if (textureOutputFolder === '') {
         return alert('No texture output folder specified')
     }
 
     if (curProject) {
         if (exportModel) {
-            if(modelOutputFolder === '')
+            if (modelOutputFolder === '')
                 return alert("No model output folder specified")
             curProject.model_output_folder = modelOutputFolder
         }
         curProject.texture_output_folder = textureOutputFolder
+
+        const settings = curProject.animation_settings ?? {}
+        settings[selectedAnimation.name] = args
+        curProject.animation_settings = settings
     }
 
-    selectedAnimation.previous_settings = args
 
     const objs = collectObjs(length, fps)
     const textures = collectTextures()
@@ -208,6 +290,8 @@ async function onConfirmDialog(this: Dialog, args: any) {
         autoAnimate,
         autoRotate,
         noShadow,
-        pow2
+        pow2,
+        useScaleAndOffset ? scale : undefined,
+        useScaleAndOffset ? [offsetX, offsetY, offsetZ] : undefined
     )
 }
