@@ -1,5 +1,6 @@
 /// <reference types="blockbench-types" />
 import ExportAction from './actions/export'
+import {cleanTemp, setupFS} from './objmc'
 
 function register() {
 
@@ -20,7 +21,9 @@ function register() {
 
 
 let properties: Property[] = []
-function onLoad() {
+async function onLoad() {
+    await setupFS();
+
     (Animation as any).prototype.menu.addAction(ExportAction, -1);
 
     properties = [
@@ -41,6 +44,7 @@ function onLoad() {
 function onUnload() {
     ExportAction.delete();
     properties.forEach(p => p.delete())
+    cleanTemp()
 }
 
 register()
