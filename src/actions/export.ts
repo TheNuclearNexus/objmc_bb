@@ -21,8 +21,8 @@ const AUTOROTATES = {
     'both': 'Both'
 }
 interface NewProperties {
-    modelOutputFolder: string
-    textureOutputFolder: string
+    model_output_folder: string
+    texture_output_folder: string
 }
 
 const getCurrentProject = (): (ModelProject & NewProperties) | null => Project ? Project as any : null
@@ -34,7 +34,10 @@ export default new Action('export_objmc', {
     icon: 'icon-objects',
     category: 'animation',
     condition: (context) => context && AnimationItem.selected,
-    click: () => clickOnAnimation()
+    click: () => {
+        const selected = (Animation as any).selected
+        clickOnAnimation(selected.previous_settings ?? { exportModel: true })
+    }
 })
 
 interface ExportFormData {
@@ -59,9 +62,9 @@ function clickOnAnimation(previous_results: any = { exportModel: true }) {
 
     const curProject = getCurrentProject()
 
-    const modelOutputFolder: DialogFormElement = { label: 'Model Output Folder', type: 'folder', value: curProject?.modelOutputFolder };
+    const modelOutputFolder: DialogFormElement = { label: 'Model Output Folder', type: 'folder', value: curProject?.model_output_folder };
     const modelFileName: DialogFormElement = { label: 'Model File Name', type: 'text', value: selected.name.split('.').at(-1) + '.json' };
-    const textureOutputFolder: DialogFormElement = { label: 'Texture Output Folder', type: 'folder', value: curProject?.textureOutputFolder }
+    const textureOutputFolder: DialogFormElement = { label: 'Texture Output Folder', type: 'folder', value: curProject?.texture_output_folder }
     const textureFileName: DialogFormElement = { label: 'Texture File Name', type: 'text', value: selected.name.split('.').at(-1) + '.png' }
 
 
@@ -154,7 +157,7 @@ function collectTextures() {
 }
 
 
-async function onConfirmDialog(args: any) {
+async function onConfirmDialog(this: Dialog, args: any) {
     const {
         length,
         fps,
@@ -171,13 +174,25 @@ async function onConfirmDialog(args: any) {
         noShadow,
         pow2
     } = args as ExportFormData
-    const curProject = getCurrentProject()
 
-    if (exportModel && curProject) {
-        console.log(curProject)
-        curProject.modelOutputFolder = modelOutputFolder
-        curProject.textureOutputFolder = textureOutputFolder
+    const curProject = getCurrentProject()
+    const selectedAnimation = (Animation as any).selected
+
+
+    if(textureOutputFolder === '') {
+        return alert('No texture output folder specified')
     }
+
+    if (curProject) {
+        if (exportModel) {
+            if(modelOutputFolder === '')
+                return alert("No model output folder specified")
+            curProject.model_output_folder = modelOutputFolder
+        }
+        curProject.texture_output_folder = textureOutputFolder
+    }
+
+    selectedAnimation.previous_settings = args
 
     const objs = collectObjs(length, fps)
     const textures = collectTextures()
