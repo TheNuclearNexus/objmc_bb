@@ -9,10 +9,11 @@ function register() {
         description: 'Export animations to OBJMC format',
         variant: 'desktop',
         icon: 'icon-objects',
+        version: '0.1.0',
         onload: onLoad,
         onunload: onUnload,
         
-    })
+    } as PluginOptions & {[key: string]: any})
 
 }
 

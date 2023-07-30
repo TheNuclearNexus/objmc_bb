@@ -1,6 +1,6 @@
 import * as path from 'path'
 export default {
-    mode: "development",
+    mode: "production",
     devtool: "inline-source-map",
     entry: {
         main: "./src/index.ts",
