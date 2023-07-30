@@ -64,6 +64,7 @@ interface ExportFormData {
     exportModel: boolean,
     modelOutputFolder: string,
     modelFileName: string,
+    modelTexturePath: string,
     textureOutputFolder: string,
     textureFileName: string,
     useScaleAndOffset: boolean,
@@ -81,6 +82,7 @@ function clickOnAnimation(previous_results: Partial<ExportFormData> = { exportMo
 
     const modelOutputFolder: DialogFormElement = { label: 'Model Output Folder', type: 'folder', value:  previous_results.modelOutputFolder ?? curProject?.model_output_folder };
     const modelFileName: DialogFormElement = { label: 'Model File Name', type: 'text', value: selected.name.split('.').at(-1) + '.json' };
+    const modelTexturePath: DialogFormElement = {label: 'Path to Texture', type: 'text', value: 'block/' + selected.name.split('.').at(-1)}
     const textureOutputFolder: DialogFormElement = { label: 'Texture Output Folder', type: 'folder', value: previous_results.textureOutputFolder ??  curProject?.texture_output_folder }
     const textureFileName: DialogFormElement = { label: 'Texture File Name', type: 'text', value: selected.name.split('.').at(-1) + '.png' }
 
@@ -107,7 +109,8 @@ function clickOnAnimation(previous_results: Partial<ExportFormData> = { exportMo
         form = {
             ...form,
             modelOutputFolder,
-            modelFileName
+            modelFileName,
+            modelTexturePath
         }
     }
     form = {
@@ -251,7 +254,8 @@ async function onConfirmDialog(this: Dialog, args: any) {
         scale,
         offsetX,
         offsetY,
-        offsetZ
+        offsetZ,
+        modelTexturePath
     } = args as ExportFormData
 
     const curProject = getCurrentProject()
@@ -286,6 +290,7 @@ async function onConfirmDialog(this: Dialog, args: any) {
         [cbR, cbG, cbB],
         length * 20,
         exportModel ? path.join(modelOutputFolder, modelFileName) : undefined,
+        exportModel ? modelTexturePath : undefined,
         path.join(textureOutputFolder, textureFileName),
         autoAnimate,
         autoRotate,

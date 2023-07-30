@@ -57,7 +57,7 @@ function leftPadName(width: number, content: string, suffix: string) {
 }
 
 export async function executeObjMC(objs: any[], textures: any[], colorbehavior: string[],
-    duration: number, modelPath: string | undefined, texturePath: string, 
+    duration: number, modelPath: string | undefined, modelTexturePath: string | undefined, texturePath: string, 
     autoAnimate: boolean, autoRotate: string, noShadow: boolean, pow2: boolean,
     scale: number|undefined, offset: number[]|undefined) {
     cleanTemp()
@@ -111,7 +111,18 @@ export async function executeObjMC(objs: any[], textures: any[], colorbehavior: 
     if(offset)
         args.push('--offset', ...offset.map(o => o.toString()))
 
-    args.push('--out', modelPath ?? path.join(tempFolder, 'model.json'), texturePath)
+    let usedTexturePath = modelTexturePath ?? texturePath
+    console.log(usedTexturePath)
+
+    args.push('--out', modelPath ?? path.join(tempFolder, 'model.json'), usedTexturePath)
 
     execFileSync('py', args)
+
+    if(modelTexturePath) {
+        const filePath = modelTexturePath.split('/').at(-1) ?? ''
+        console.log(filePath)
+        fs.cpSync(filePath + '.png', texturePath)
+        fs.rmSync(filePath + '.png', {force: true})
+    }
+
 }
