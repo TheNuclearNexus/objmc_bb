@@ -15,10 +15,10 @@ const COLORBEHAVIORS = {
 }
 
 const AUTOROTATES = {
-    'off': 'Off',
-    'yaw': 'Yaw',
-    'pitch': 'Pitch',
-    'both': 'Both'
+    0: 'Off',
+    1: 'Yaw',
+    2: 'Pitch',
+    3: 'Both'
 }
 
 const PRESETS = {
@@ -58,7 +58,7 @@ interface ExportFormData {
     cbG: string,
     cbB: string,
     autoAnimate: boolean,
-    autoRotate: string,
+    autoRotate: number,
     pow2: boolean,
     noShadow: boolean,
     exportModel: boolean,

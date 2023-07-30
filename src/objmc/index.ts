@@ -19,7 +19,7 @@ interface GithubContentResult {
     type: string,
     encoding: string,
     content: string,
-      
+
 }
 
 export function cleanTemp() {
@@ -34,18 +34,18 @@ export async function setupFS() {
         fs.mkdirSync(parentFolder)
 
     const shaPath = path.join(parentFolder, 'sha')
-    let curSha = fs.existsSync(shaPath) ? fs.readFileSync(shaPath, {encoding: 'utf-8'}) : ''
+    let curSha = fs.existsSync(shaPath) ? fs.readFileSync(shaPath, { encoding: 'utf-8' }) : ''
     const githubResponse = await fetch(API_URL)
 
     if (!githubResponse.ok)
-        throw "An error occured while fetching OBJMC from git API\n" 
-            + githubResponse.status + "\n" 
-            + githubResponse.statusText
+        throw "An error occured while fetching OBJMC from git API\n"
+        + githubResponse.status + "\n"
+        + githubResponse.statusText
 
     const githubData: GithubContentResult = await githubResponse.json()
 
-    if(githubData.sha !== curSha) {
-        fs.writeFileSync('./objmc/objmc.py', githubData.content, {encoding: 'base64'})
+    if (githubData.sha !== curSha) {
+        fs.writeFileSync('./objmc/objmc.py', githubData.content, { encoding: 'base64' })
         fs.writeFileSync(shaPath, githubData.sha)
     }
 
@@ -57,9 +57,9 @@ function leftPadName(width: number, content: string, suffix: string) {
 }
 
 export async function executeObjMC(objs: any[], textures: any[], colorbehavior: string[],
-    duration: number, modelPath: string | undefined, modelTexturePath: string | undefined, texturePath: string, 
-    autoAnimate: boolean, autoRotate: string, noShadow: boolean, pow2: boolean,
-    scale: number|undefined, offset: number[]|undefined) {
+    duration: number, modelPath: string | undefined, modelTexturePath: string | undefined, texturePath: string,
+    autoAnimate: boolean, autoRotate: number, noShadow: boolean, pow2: boolean,
+    scale: number | undefined, offset: number[] | undefined) {
     cleanTemp()
 
     const objFilePaths = objs.map((obj, idx) => {
@@ -95,20 +95,20 @@ export async function executeObjMC(objs: any[], textures: any[], colorbehavior: 
         '--objs', ...objFilePaths,
         '--texs', ...textureFilePaths,
         '--duration', duration.toString(),
-        '--colorbehavior', ...colorbehavior
+        '--colorbehavior', ...colorbehavior,
+        '--autorotate', autoRotate.toString()
     ]
 
-    if(autoAnimate)
+    if (autoAnimate)
         args.push('--autoplay')
-    if(autoRotate != 'off')
-        args.push('--autorotate', autoRotate)
-    if(noShadow)
+
+    if (noShadow)
         args.push('--noshadow')
-    if(!pow2)
+    if (!pow2)
         args.push('--nopow')
-    if(scale)
+    if (scale)
         args.push('--scale', scale.toString())
-    if(offset)
+    if (offset)
         args.push('--offset', ...offset.map(o => o.toString()))
 
     let usedTexturePath = modelTexturePath ?? texturePath
@@ -118,11 +118,11 @@ export async function executeObjMC(objs: any[], textures: any[], colorbehavior: 
 
     execFileSync('py', args)
 
-    if(modelTexturePath) {
+    if (modelTexturePath) {
         const filePath = modelTexturePath.split('/').at(-1) ?? ''
         console.log(filePath)
         fs.cpSync(filePath + '.png', texturePath)
-        fs.rmSync(filePath + '.png', {force: true})
+        fs.rmSync(filePath + '.png', { force: true })
     }
 
 }
