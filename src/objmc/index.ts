@@ -4,7 +4,7 @@ import path from 'path'
 
 const API_URL = new URL("https://api.github.com/repos/TheNuclearNexus/objmc/contents/objmc.py")
 
-const parentFolder = './objmc'
+const parentFolder = (process.env.APPDATA ?? process.env.HOME ?? '.') + '/objmc'
 const tempFolder = path.join(parentFolder, 'temp')
 
 interface GithubContentResult {
@@ -30,6 +30,7 @@ export function cleanTemp() {
 }
 
 export async function setupFS() {
+    console.log(parentFolder)
     if (!fs.existsSync(parentFolder))
         fs.mkdirSync(parentFolder)
 
@@ -45,7 +46,7 @@ export async function setupFS() {
     const githubData: GithubContentResult = await githubResponse.json()
 
     if (githubData.sha !== curSha) {
-        fs.writeFileSync('./objmc/objmc.py', githubData.content, { encoding: 'base64' })
+        fs.writeFileSync(parentFolder + '/objmc.py', githubData.content, { encoding: 'base64' })
         fs.writeFileSync(shaPath, githubData.sha)
     }
 
@@ -116,7 +117,7 @@ export async function executeObjMC(objs: any[], textures: any[], colorbehavior: 
 
     args.push('--out', modelPath ?? path.join(tempFolder, 'model.json'), usedTexturePath)
 
-    execFileSync('py', args)
+    execFileSync(settings.python_command.value, args)
 
     if (modelTexturePath) {
         const filePath = modelTexturePath.split('/').at(-1) ?? ''
